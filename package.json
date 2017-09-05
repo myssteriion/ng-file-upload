@@ -1,5 +1,5 @@
 {
-  "name": "ng-file-upload",
+  "name": "ng-file-upload-myssteriion",
   "version": "12.2.13",
   "devDependencies": {
     "grunt": "^0.4.5",
@@ -25,18 +25,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/danialfarid/ng-file-upload.git"
+    "url": "https://github.com/myssteriion/ng-file-upload-myssteriion.git"
   },
   "keywords": [
     "angularjs",
-    "ng-file-upload",
+    "ng-file-upload-myssteriion",
     "file-upload",
     "javascript"
   ],
   "author": "danial.farid@gmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/danialfarid/ng-file-upload/issues"
+    "url": "https://github.com/myssteriion/ng-file-upload-myssteriion/issues"
   },
-  "homepage": "https://github.com/danialfarid/ng-file-upload"
+  "homepage": "https://github.com/myssteriion/ng-file-upload-myssteriion"
 }
