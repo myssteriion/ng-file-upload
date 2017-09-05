@@ -569,8 +569,15 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
 
     function removeDuplicates() {
       function equals(f1, f2) {
-        return f1.name === f2.name && (f1.$ngfOrigSize || f1.size) === (f2.$ngfOrigSize || f2.size) &&
-          f1.type === f2.type;
+
+        if (f1.path !== undefined && f2.path !== undefined) {
+            return f1.path === f2.path && (f1.$ngfOrigSize || f1.size) === (f2.$ngfOrigSize || f2.size) &&
+                f1.type === f2.type;
+        }
+        else {
+          return f1.name === f2.name && (f1.$ngfOrigSize || f1.size) === (f2.$ngfOrigSize || f2.size) &&
+            f1.type === f2.type;
+        }
       }
 
       function isInPrevFiles(f) {
