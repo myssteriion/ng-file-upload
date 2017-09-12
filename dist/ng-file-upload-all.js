@@ -1086,36 +1086,53 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
     if (keep && !allNewFiles.length) return;
 
     upload.attrGetter('ngfBeforeModelChange', attr, scope, {
-      $files: files,
-      $file: files && files.length ? files[0] : null,
-      $newFiles: allNewFiles,
-      $duplicateFiles: dupFiles,
-      $event: evt
+        $files: files,
+        $file: files && files.length ? files[0] : null,
+        $newFiles: allNewFiles,
+        $duplicateFiles: dupFiles,
+        $event: evt
     });
 
     var validateAfterResize = upload.attrGetter('ngfValidateAfterResize', attr, scope);
 
+    var attrGetter = function (name, scope, params) {
+        return upload.attrGetter(name, attr, scope, params);
+    };
+
+    var beginUpdateModel = 4;
+    var endUpdateModel = 5;
+    function callNgfDropState(state) {
+        var ngfDropState = attrGetter('ngfDropState');
+        if (ngfDropState) {
+            $parse(ngfDropState)(scope, {
+                $state: state
+            });
+        }
+    }
+
     var options = upload.attrGetter('ngfModelOptions', attr, scope);
+    callNgfDropState(beginUpdateModel);
     upload.validate(allNewFiles, keep ? prevValidFiles.length : 0, ngModel, attr, scope)
       .then(function (validationResult) {
-      if (noDelay) {
-        update(allNewFiles, [], files, dupFiles, isSingleModel);
-      } else {
-        if ((!options || !options.allowInvalid) && !validateAfterResize) {
-          valids = validationResult.validFiles;
-          invalids = validationResult.invalidFiles;
+        if (noDelay) {
+          update(allNewFiles, [], files, dupFiles, isSingleModel);
         } else {
-          valids = allNewFiles;
-        }
-        if (upload.attrGetter('ngfFixOrientation', attr, scope) && upload.isExifSupported()) {
-          applyExifRotations(valids, attr, scope).then(function () {
+          if ((!options || !options.allowInvalid) && !validateAfterResize) {
+            valids = validationResult.validFiles;
+            invalids = validationResult.invalidFiles;
+          } else {
+            valids = allNewFiles;
+          }
+          if (upload.attrGetter('ngfFixOrientation', attr, scope) && upload.isExifSupported()) {
+            applyExifRotations(valids, attr, scope).then(function () {
+              resizeAndUpdate();
+            });
+          } else {
             resizeAndUpdate();
-          });
-        } else {
-          resizeAndUpdate();
+          }
         }
-      }
-    });
+        callNgfDropState(endUpdateModel);
+      });
   };
 
   return upload;
@@ -2317,6 +2334,18 @@ ngFileUpload.service('UploadResize', ['UploadValidate', '$q', function (UploadVa
       return upload.attrGetter(name, attr, scope, params);
     };
 
+      var beginExtractFiles = 1;
+      var successExtractFiles = 2;
+      var errorExtractFiles = 3;
+      function callNgfDropState(state) {
+          var ngfDropState = attrGetter('ngfDropState');
+          if (ngfDropState) {
+              $parse(ngfDropState)(scope, {
+                  $state: state
+              });
+          }
+      }
+
     if (attrGetter('dropAvailable')) {
       $timeout(function () {
         if (scope[attrGetter('dropAvailable')]) {
@@ -2416,16 +2445,23 @@ ngFileUpload.service('UploadResize', ['UploadValidate', '$q', function (UploadVa
         html = source && source.getData && source.getData('text/html');
       } catch (e) {/* Fix IE11 that throw error calling getData */
       }
-      extractFiles(source.items, source.files, attrGetter('ngfAllowDir', scope) !== false,
-        attrGetter('multiple') || attrGetter('ngfMultiple', scope)).then(function (files) {
-        if (files.length) {
-          updateModel(files, evt);
-        } else {
-          extractFilesFromHtml(updateOnType, html).then(function (files) {
-            updateModel(files, evt);
-          });
-        }
-      });
+
+      callNgfDropState(beginExtractFiles);
+      extractFiles(source.items, source.files, attrGetter('ngfAllowDir', scope) !== false, attrGetter('multiple') || attrGetter('ngfMultiple', scope))
+          .then(function (files) {
+              callNgfDropState(successExtractFiles);
+              if (files.length) {
+                  updateModel(files, evt);
+              } else {
+                  extractFilesFromHtml(updateOnType, html).then(function (files) {
+                      updateModel(files, evt);
+                  });
+              }
+          })
+          .catch( function(response) {
+                callNgfDropState(errorExtractFiles);
+                console.log("my catch extractFiles", response);
+            });
     }
 
     function updateModel(files, evt) {

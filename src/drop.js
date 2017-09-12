@@ -37,6 +37,18 @@
       return upload.attrGetter(name, attr, scope, params);
     };
 
+    var beginExtractFiles = 1;
+    var successExtractFiles = 2;
+    var errorExtractFiles = 3;
+    function callNgfDropState(state) {
+        var ngfDropState = attrGetter('ngfDropState');
+        if (ngfDropState) {
+            $parse(ngfDropState)(scope, {
+                $state: state
+            });
+        }
+    }
+
     if (attrGetter('dropAvailable')) {
       $timeout(function () {
         if (scope[attrGetter('dropAvailable')]) {
@@ -136,16 +148,24 @@
         html = source && source.getData && source.getData('text/html');
       } catch (e) {/* Fix IE11 that throw error calling getData */
       }
-      extractFiles(source.items, source.files, attrGetter('ngfAllowDir', scope) !== false,
-        attrGetter('multiple') || attrGetter('ngfMultiple', scope)).then(function (files) {
-        if (files.length) {
-          updateModel(files, evt);
-        } else {
-          extractFilesFromHtml(updateOnType, html).then(function (files) {
-            updateModel(files, evt);
+
+      callNgfDropState(beginExtractFiles);
+      extractFiles(source.items, source.files, attrGetter('ngfAllowDir', scope) !== false, attrGetter('multiple') || attrGetter('ngfMultiple', scope))
+          .then(function (files) {
+              callNgfDropState(successExtractFiles);
+              if (files.length) {
+                  updateModel(files, evt);
+              } else {
+                  extractFilesFromHtml(updateOnType, html).then(function (files) {
+                      updateModel(files, evt);
+                  });
+              }
+          })
+          .catch( function(response) {
+              callNgfDropState(errorExtractFiles);
+              console.log("my catch extractFiles", response);
           });
-        }
-      });
+
     }
 
     function updateModel(files, evt) {

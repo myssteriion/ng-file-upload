@@ -263,36 +263,53 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
     if (keep && !allNewFiles.length) return;
 
     upload.attrGetter('ngfBeforeModelChange', attr, scope, {
-      $files: files,
-      $file: files && files.length ? files[0] : null,
-      $newFiles: allNewFiles,
-      $duplicateFiles: dupFiles,
-      $event: evt
+        $files: files,
+        $file: files && files.length ? files[0] : null,
+        $newFiles: allNewFiles,
+        $duplicateFiles: dupFiles,
+        $event: evt
     });
 
     var validateAfterResize = upload.attrGetter('ngfValidateAfterResize', attr, scope);
 
+    var attrGetter = function (name, scope, params) {
+        return upload.attrGetter(name, attr, scope, params);
+    };
+
+    var beginUpdateModel = 4;
+    var endUpdateModel = 5;
+    function callNgfDropState(state) {
+        var ngfDropState = attrGetter('ngfDropState');
+        if (ngfDropState) {
+            $parse(ngfDropState)(scope, {
+                $state: state
+            });
+        }
+    }
+
     var options = upload.attrGetter('ngfModelOptions', attr, scope);
+    callNgfDropState(beginUpdateModel);
     upload.validate(allNewFiles, keep ? prevValidFiles.length : 0, ngModel, attr, scope)
       .then(function (validationResult) {
-      if (noDelay) {
-        update(allNewFiles, [], files, dupFiles, isSingleModel);
-      } else {
-        if ((!options || !options.allowInvalid) && !validateAfterResize) {
-          valids = validationResult.validFiles;
-          invalids = validationResult.invalidFiles;
+        if (noDelay) {
+          update(allNewFiles, [], files, dupFiles, isSingleModel);
         } else {
-          valids = allNewFiles;
-        }
-        if (upload.attrGetter('ngfFixOrientation', attr, scope) && upload.isExifSupported()) {
-          applyExifRotations(valids, attr, scope).then(function () {
+          if ((!options || !options.allowInvalid) && !validateAfterResize) {
+            valids = validationResult.validFiles;
+            invalids = validationResult.invalidFiles;
+          } else {
+            valids = allNewFiles;
+          }
+          if (upload.attrGetter('ngfFixOrientation', attr, scope) && upload.isExifSupported()) {
+            applyExifRotations(valids, attr, scope).then(function () {
+              resizeAndUpdate();
+            });
+          } else {
             resizeAndUpdate();
-          });
-        } else {
-          resizeAndUpdate();
+          }
         }
-      }
-    });
+        callNgfDropState(endUpdateModel);
+      });
   };
 
   return upload;
