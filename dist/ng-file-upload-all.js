@@ -1083,7 +1083,29 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
 
     var isSingleModel = !keep && !upload.attrGetter('ngfMultiple', attr, scope) && !upload.attrGetter('multiple', attr);
 
-    if (keep && !allNewFiles.length) return;
+    var attrGetter = function (name, scope, params) {
+        return upload.attrGetter(name, attr, scope, params);
+    };
+
+    var noNeedUpdateModel = 4;
+    var beginUpdateModel = 5;
+    var successUpdateModel = 6;
+    var errorUpdateModel = 7;
+    function callNgfDropState(state, message) {
+        var ngfDropState = attrGetter('ngfDropState');
+        if (ngfDropState) {
+            $parse(ngfDropState)(scope, {
+                $state: state,
+                $message: message
+            });
+        }
+    }
+
+
+    if (keep && !allNewFiles.length) {
+        callNgfDropState(noNeedUpdateModel);
+        return;
+    }
 
     upload.attrGetter('ngfBeforeModelChange', attr, scope, {
         $files: files,
@@ -1094,21 +1116,6 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
     });
 
     var validateAfterResize = upload.attrGetter('ngfValidateAfterResize', attr, scope);
-
-    var attrGetter = function (name, scope, params) {
-        return upload.attrGetter(name, attr, scope, params);
-    };
-
-    var beginUpdateModel = 4;
-    var endUpdateModel = 5;
-    function callNgfDropState(state) {
-        var ngfDropState = attrGetter('ngfDropState');
-        if (ngfDropState) {
-            $parse(ngfDropState)(scope, {
-                $state: state
-            });
-        }
-    }
 
     var options = upload.attrGetter('ngfModelOptions', attr, scope);
     callNgfDropState(beginUpdateModel);
@@ -1131,7 +1138,11 @@ ngFileUpload.service('Upload', ['$parse', '$timeout', '$compile', '$q', 'UploadE
             resizeAndUpdate();
           }
         }
-        callNgfDropState(endUpdateModel);
+        callNgfDropState(successUpdateModel);
+      })
+      .catch( function(response) {
+          callNgfDropState(errorUpdateModel, response);
+          console.log("my catch updateModel", response);
       });
   };
 
@@ -2337,11 +2348,12 @@ ngFileUpload.service('UploadResize', ['UploadValidate', '$q', function (UploadVa
       var beginExtractFiles = 1;
       var successExtractFiles = 2;
       var errorExtractFiles = 3;
-      function callNgfDropState(state) {
+      function callNgfDropState(state, message) {
           var ngfDropState = attrGetter('ngfDropState');
           if (ngfDropState) {
               $parse(ngfDropState)(scope, {
-                  $state: state
+                  $state: state,
+                  $message: message
               });
           }
       }
@@ -2459,7 +2471,7 @@ ngFileUpload.service('UploadResize', ['UploadValidate', '$q', function (UploadVa
               }
           })
           .catch( function(response) {
-                callNgfDropState(errorExtractFiles);
+                callNgfDropState(errorExtractFiles, response);
                 console.log("my catch extractFiles", response);
             });
     }

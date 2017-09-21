@@ -40,11 +40,12 @@
     var beginExtractFiles = 1;
     var successExtractFiles = 2;
     var errorExtractFiles = 3;
-    function callNgfDropState(state) {
+    function callNgfDropState(state, message) {
         var ngfDropState = attrGetter('ngfDropState');
         if (ngfDropState) {
             $parse(ngfDropState)(scope, {
-                $state: state
+                $state: state,
+                $message: message
             });
         }
     }
@@ -162,7 +163,7 @@
               }
           })
           .catch( function(response) {
-              callNgfDropState(errorExtractFiles);
+              callNgfDropState(errorExtractFiles, response);
               console.log("my catch extractFiles", response);
           });
 
